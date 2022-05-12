@@ -1,0 +1,99 @@
+version: '3.9'
+
+networks:
+  default:
+    external: true
+    name: ${EXTERNAL_NETWORK}
+
+volumes:
+  workspace:
+    driver: local
+
+services:
+  ### go-builder ##############################################
+  go-builder:
+    image: golang:1.18
+    environment:
+      - GOPROXY=https://goproxy.cn,direct
+      - GOOS=linux
+      - CGO_ENABLED=0
+    volumes:
+      - ${CODE_PATH}:/go/src
+      - ${BUILD_SCRIPT}:/var/workspace/start-build.sh  #每个服务对应的编译二进制文件脚本，相对或者绝对路径
+      - workspace:/workspace   #对应volumes定义的volume
+    command: [ "sh", "-c", "/var/workspace/start-build.sh" ]
+
+  ### gorse-master ##############################################
+  gorse-master:
+    build:
+      context: ${CODE_PATH}
+      dockerfile: ./deploy/Dockerfile-Alpine
+    container_name: gorse-master
+    environment:
+      - APP_ENV=dev
+      - TZ=Asia/Shanghai
+      - LANG=C.UTF-8
+    restart: "always"
+    volumes:
+      - workspace:/workspace
+      - ./etc:/var/etc/
+      # - todo log cache
+    ports:
+      - 8086:8086
+      - 8088:8088
+    networks:
+      - default
+    stdin_open: true
+    tty: true
+    privileged: true
+    working_dir: /workspace
+    command: [ "./gorse-master", "-c", "/var/etc/config.toml" ]
+  
+  ### gorse-server ##############################################
+  gorse-server:
+    build:
+      context: ${CODE_PATH}
+      dockerfile: ./deploy/Dockerfile-Alpine
+    container_name: gorse-server
+    environment:
+      - APP_ENV=dev
+      - TZ=Asia/Shanghai
+      - LANG=C.UTF-8
+    restart: "always"
+    volumes:
+      - workspace:/workspace
+      # - todo log cache
+    ports:
+      - 8087:8087
+    networks:
+      - default
+    stdin_open: true
+    tty: true
+    privileged: true
+    working_dir: /workspace
+    command: ./gorse-server --master-host gorse-master --master-port 8086 --http-host 0.0.0.0 --http-port 8087
+
+  ### gorse-worker ##############################################
+  gorse-worker:
+    build:
+      context: ${CODE_PATH}
+      dockerfile: ./deploy/Dockerfile-Alpine
+    container_name: gorse-worker
+    environment:
+      - APP_ENV=dev
+      - TZ=Asia/Shanghai
+      - LANG=C.UTF-8
+    restart: "always"
+    volumes:
+      - workspace:/workspace
+      # - todo log cache
+    ports:
+      - 8089:8089
+    networks:
+      - default
+    stdin_open: true
+    tty: true
+    privileged: true
+    working_dir: /workspace
+    command: ./gorse-worker --master-host gorse-master --master-port 8086 --http-host 0.0.0.0 --http-port 8089
+
