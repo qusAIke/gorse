@@ -65,29 +65,29 @@ func (d *SQLDatabase) Init() error {
 	case MySQL:
 		// create tables
 		if _, err := d.client.Exec("CREATE TABLE IF NOT EXISTS items (" +
-			"item_id varchar(256) NOT NULL," +
+			"item_id varchar(50) NOT NULL," +
 			"time_stamp datetime NOT NULL," +
-			"labels json NOT NULL," +
+			"labels TEXT NOT NULL," +
 			"comment TEXT NOT NULL," +
-			"is_hidden BOOL NOT NULL DEFAULT FALSE," +
-			"categories json NOT NULL," +
+			"is_hidden tinyint(1) NOT NULL DEFAULT '0'," +
+			"categories TEXT NOT NULL," +
 			"PRIMARY KEY(item_id)" +
 			")  ENGINE=InnoDB"); err != nil {
 			return errors.Trace(err)
 		}
 		if _, err := d.client.Exec("CREATE TABLE IF NOT EXISTS users (" +
-			"user_id varchar(256) NOT NULL," +
-			"labels json NOT NULL," +
-			"subscribe json NOT NULL," +
+			"user_id varchar(50) NOT NULL," +
+			"labels varchar(199) NOT NULL DEFAULT ''," +
+			"subscribe varchar(199) NOT NULL DEFAULT ''," +
 			"comment TEXT NOT NULL," +
 			"PRIMARY KEY (user_id)" +
 			")  ENGINE=InnoDB"); err != nil {
 			return errors.Trace(err)
 		}
 		if _, err := d.client.Exec("CREATE TABLE IF NOT EXISTS feedback (" +
-			"feedback_type varchar(256) NOT NULL," +
-			"user_id varchar(256) NOT NULL," +
-			"item_id varchar(256) NOT NULL," +
+			"feedback_type varchar(50) NOT NULL," +
+			"user_id varchar(50) NOT NULL," +
+			"item_id varchar(50) NOT NULL," +
 			"time_stamp datetime NOT NULL," +
 			"comment TEXT NOT NULL," +
 			"PRIMARY KEY(feedback_type, user_id, item_id)," +
